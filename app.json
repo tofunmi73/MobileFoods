@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "MobileFoods",
+    "slug": "MobileFoods",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mobilefoods.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to take profile photos."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.mobilefoods.app",
+      "permissions": ["CAMERA"],
+      "minSdkVersion": 21,
+      "targetSdkVersion": 34
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow MobileFoods to access your camera to take profile photos."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d589e45d-d1f3-4a7c-aaee-0d84fa080552"
+      }
+    }
+  }
+}
