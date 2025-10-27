@@ -28,6 +28,7 @@ export const MapScreen = ({ navigation }) => {
     <>
       <Search />
       <MapView
+        provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={{
           latitude: lat,

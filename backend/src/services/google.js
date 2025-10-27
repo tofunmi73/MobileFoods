@@ -40,6 +40,9 @@ export async function nearbySearch({ lat, lng, radius, keyword }) {
     address: r.vicinity,
     location: r.geometry?.location,
     photoRef: r.photos?.[0]?.photo_reference,
+    photoUrl: r.photos?.[0]?.photo_reference
+      ? `${G}/place/photo?maxwidth=800&photo_reference=${r.photos[0].photo_reference}&key=${KEY}`
+      : undefined,
   }));
   return { results };
 }

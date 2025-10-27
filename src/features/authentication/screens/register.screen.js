@@ -14,15 +14,14 @@ export const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [repeatedPassword, setRepeatedPassword] = useState("");
   const [ready, setReady] = useState(false);
-  const { onRegister, error, clearError } = useContext(AuthenticationContext);
+  const { onRegister, error, clearError, loading } = useContext(
+    AuthenticationContext
+  );
   const isFocused = useIsFocused();
 
-
-
-useEffect(() => {
-  if (!isFocused) clearError(); // clear only when leaving
-}, [isFocused]);
-
+  useEffect(() => {
+    if (!isFocused) clearError(); // clear only when leaving
+  }, [isFocused]);
 
   useEffect(() => {
     let mounted = true;
@@ -92,6 +91,8 @@ useEffect(() => {
           icon="account-plus-outline"
           buttonColor="black"
           onPress={() => onRegister(email, password, repeatedPassword)}
+          loading={loading}
+          disabled={loading}
           style={styles.authButton}
         >
           Register

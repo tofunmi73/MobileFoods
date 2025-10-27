@@ -13,9 +13,10 @@ export const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [ready, setReady] = useState(false);
-  const { onLogin, error, clearError } = useContext(AuthenticationContext);
+  const { onLogin, error, clearError, loading } = useContext(
+    AuthenticationContext
+  );
   const isFocused = useIsFocused();
-
 
   useEffect(() => {
     if (!isFocused) clearError(); // clear only when leaving
@@ -81,6 +82,8 @@ export const LoginScreen = ({ navigation }) => {
           icon="lock-open-outline"
           buttonColor="black"
           onPress={() => onLogin(email, password)}
+          loading={loading}
+          disabled={loading}
           style={styles.authButton}
         >
           Login
