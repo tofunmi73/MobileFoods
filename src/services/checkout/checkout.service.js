@@ -1,22 +1,24 @@
 import { BACKEND_URL } from "../api/config";
 
-export const createPaymentMethod = async (cardData) => {
-  const { number, exp_month, exp_year, cvc, name } = cardData;
+// Send payment_method_id to backend (created client-side via Stripe SDK)
+export const createPaymentMethod = async ({ paymentMethodId }) => {
+  if (!paymentMethodId) {
+    return { error: "Payment method ID is required" };
+  }
 
   try {
-    const response = await fetch(`${BACKEND_URL}/api/checkout/payment-method`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        number,
-        exp_month,
-        exp_year,
-        cvc,
-        name,
-      }),
-    });
+    const response = await fetch(
+      `${BACKEND_URL}/api/checkout/confirm-payment-method`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paymentMethodId,
+        }),
+      }
+    );
 
     // Check if response is JSON before parsing
     const contentType = response.headers.get("content-type");
@@ -29,12 +31,12 @@ export const createPaymentMethod = async (cardData) => {
     const data = await response.json();
 
     if (!response.ok || data.error) {
-      return { error: data.error || "Failed to create payment method" };
+      return { error: data.error || "Failed to confirm payment method" };
     }
 
-    return { paymentMethodId: data.paymentMethodId };
+    return { success: true, ...data };
   } catch (error) {
-    console.error("Payment method creation error:", error);
+    console.error("Payment method confirmation error:", error);
     return { error: error.message || "Network error" };
   }
 };

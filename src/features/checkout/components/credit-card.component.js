@@ -1,205 +1,138 @@
-import React, {
-  useMemo,
-  useState,
-  useImperativeHandle,
-  forwardRef,
-} from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useState, useImperativeHandle, forwardRef } from "react";
+import { View, StyleSheet, ScrollView } from "react-native";
 import { TextInput, HelperText, Button } from "react-native-paper";
 import {
-  createPaymentToken,
-  validateCardData,
-} from "../../../services/checkout/checkout.service";
+  useStripe,
+  CardField,
+} from "@stripe/stripe-react-native";
+import Constants from "expo-constants";
+import { createPaymentMethod as sendPaymentMethodToBackend } from "../../../services/checkout/checkout.service";
 
-const formatCardNumber = (value) =>
-  value
-    .replace(/\D/g, "")
-    .slice(0, 19)
-    .replace(/(.{4})/g, "$1 ")
-    .trim();
-
-const formatExpiry = (value) => {
-  const digits = value.replace(/\D/g, "").slice(0, 4);
-  if (digits.length <= 2) return digits;
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-};
-
-const isLuhnValid = (num) => {
-  const s = num.replace(/\s+/g, "");
-  if (!s) return false;
-  let sum = 0,
-    dbl = false;
-  for (let i = s.length - 1; i >= 0; i--) {
-    let d = parseInt(s[i], 10);
-    if (dbl) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
-    sum += d;
-    dbl = !dbl;
-  }
-  return sum % 10 === 0;
-};
+const stripePublishableKey =
+  Constants.expoConfig?.extra?.stripePublishableKey ||
+  Constants.manifest?.extra?.stripePublishableKey;
 
 export const CreditCardInput = forwardRef(
   ({ onChange, onTokenCreated }, ref) => {
-    const [cardNumber, setCardNumber] = useState("");
+    const { createPaymentMethod } = useStripe();
     const [name, setName] = useState("");
-    const [expiry, setExpiry] = useState("");
-    const [cvc, setCvc] = useState("");
-    const [isCreatingToken, setIsCreatingToken] = useState(false);
+    const [isCreatingPaymentMethod, setIsCreatingPaymentMethod] = useState(false);
+    const [cardDetails, setCardDetails] = useState(null);
+    const [errors, setErrors] = useState({});
 
-    const errors = useMemo(() => {
-      const errs = {};
-      const digits = cardNumber.replace(/\s+/g, "");
-      if (
-        digits.length >= 13 &&
-        digits.length <= 19 &&
-        !isLuhnValid(cardNumber)
-      ) {
-        errs.cardNumber = "Invalid card number";
-      }
-      if (expiry && !/^\d{2}\/\d{2}$/.test(expiry)) {
-        errs.expiry = "Use MM/YY";
-      }
-      if (cvc && !/^\d{3,4}$/.test(cvc)) {
-        errs.cvc = "3–4 digits";
-      }
-      return errs;
-    }, [cardNumber, expiry, cvc]);
-
-    const emit = () => {
-      onChange?.({
-        valid:
-          isLuhnValid(cardNumber) &&
-          /^\d{2}\/\d{2}$/.test(expiry) &&
-          /^\d{3,4}$/.test(cvc) &&
-          !!name,
-        values: {
-          number: cardNumber.replace(/\s+/g, ""),
-          name,
-          expiry,
-          cvc,
-        },
-        errors,
-      });
-    };
-
-    const createStripeToken = async () => {
-      if (
-        !isLuhnValid(cardNumber) ||
-        !/^\d{2}\/\d{2}$/.test(expiry) ||
-        !/^\d{3,4}$/.test(cvc) ||
-        !name
-      ) {
+    const createStripePaymentMethod = async () => {
+      if (!name.trim()) {
+        setErrors({ name: "Name is required" });
         return;
       }
 
-      setIsCreatingToken(true);
-      try {
-        const [month, year] = expiry.split("/");
-        const cardData = {
-          number: cardNumber,
-          exp_month: month,
-          exp_year: `20${year}`,
-          cvc: cvc,
-          name: name,
-        };
+      if (!cardDetails?.complete) {
+        setErrors({ card: "Please complete all card fields" });
+        return;
+      }
 
-        const result = await createPaymentToken(cardData);
-        onTokenCreated?.(result);
+      setIsCreatingPaymentMethod(true);
+      setErrors({});
+
+      try {
+        // Create PaymentMethod using Stripe SDK (client-side - no raw card data sent to backend)
+        const { paymentMethod, error: stripeError } = await createPaymentMethod({
+          paymentMethodType: "Card",
+          billingDetails: {
+            name: name.trim(),
+          },
+        });
+
+        if (stripeError) {
+          console.error("Stripe error:", stripeError);
+          onTokenCreated?.({ error: stripeError.message });
+          setErrors({ card: stripeError.message });
+          return;
+        }
+
+        if (paymentMethod) {
+          // Send payment_method_id to backend (secure - no raw card data)
+          const result = await sendPaymentMethodToBackend({
+            paymentMethodId: paymentMethod.id,
+          });
+
+          if (result.error) {
+            onTokenCreated?.({ error: result.error });
+          } else {
+            onTokenCreated?.({
+              paymentMethodId: paymentMethod.id,
+              ...result,
+            });
+          }
+        }
       } catch (error) {
-        console.error("Stripe token creation failed:", error);
+        console.error("Payment method creation failed:", error);
         onTokenCreated?.({ error: error.message });
+        setErrors({ card: error.message });
       } finally {
-        setIsCreatingToken(false);
+        setIsCreatingPaymentMethod(false);
       }
     };
 
-    // Expose createStripeToken function to parent component
+    // Expose createToken function for backward compatibility
     useImperativeHandle(ref, () => ({
-      createToken: createStripeToken,
-      isValid:
-        isLuhnValid(cardNumber) &&
-        /^\d{2}\/\d{2}$/.test(expiry) &&
-        /^\d{3,4}$/.test(cvc) &&
-        !!name,
+      createToken: createStripePaymentMethod,
+      isValid: cardDetails?.complete && !!name.trim(),
     }));
 
     return (
-      <View style={styles.container}>
-        <TextInput
-          label="Card number"
-          keyboardType="number-pad"
-          value={cardNumber}
-          onChangeText={(v) => {
-            const formatted = formatCardNumber(v);
-            setCardNumber(formatted);
-            emit();
-          }}
-          error={!!errors.cardNumber}
-          left={<TextInput.Icon icon="credit-card" />}
-          style={styles.input}
-        />
-        {!!errors.cardNumber && (
-          <HelperText type="error">{errors.cardNumber}</HelperText>
-        )}
-
+      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         <TextInput
           label="Name on card"
           value={name}
           onChangeText={(v) => {
             setName(v);
-            emit();
+            setErrors((prev) => ({ ...prev, name: null }));
+            onChange?.({ name: v });
           }}
+          error={!!errors.name}
           style={styles.input}
         />
+        {errors.name && <HelperText type="error">{errors.name}</HelperText>}
 
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.half]}
-            label="MM/YY"
-            keyboardType="number-pad"
-            value={expiry}
-            onChangeText={(v) => {
-              const formatted = formatExpiry(v);
-              setExpiry(formatted);
-              emit();
+        <View style={styles.cardFieldContainer}>
+          <CardField
+            postalCodeEnabled={false}
+            placeholders={{
+              number: "4242 4242 4242 4242",
             }}
-            error={!!errors.expiry}
-          />
-          <TextInput
-            style={[styles.input, styles.half]}
-            label="CVC"
-            keyboardType="number-pad"
-            value={cvc}
-            onChangeText={(v) => {
-              setCvc(v.replace(/\D/g, "").slice(0, 4));
-              emit();
+            cardStyle={{
+              backgroundColor: "#FFFFFF",
+              textColor: "#000000",
+              borderWidth: 1,
+              borderColor: "#CCCCCC",
+              borderRadius: 8,
             }}
-            error={!!errors.cvc}
+            style={styles.cardField}
+            onCardChange={(details) => {
+              setCardDetails(details);
+              setErrors((prev) => ({ ...prev, card: null }));
+              onChange?.({
+                complete: details.complete,
+                valid: details.complete && !!name.trim(),
+              });
+            }}
           />
+          {errors.card && <HelperText type="error">{errors.card}</HelperText>}
         </View>
-        {!!errors.expiry && (
-          <HelperText type="error">{errors.expiry}</HelperText>
-        )}
-        {!!errors.cvc && <HelperText type="error">{errors.cvc}</HelperText>}
 
         <Button
           mode="contained"
-          onPress={createStripeToken}
-          loading={isCreatingToken}
-          disabled={
-            !isLuhnValid(cardNumber) ||
-            !/^\d{2}\/\d{2}$/.test(expiry) ||
-            !/^\d{3,4}$/.test(cvc) ||
-            !name
-          }
+          onPress={createStripePaymentMethod}
+          loading={isCreatingPaymentMethod}
+          disabled={!cardDetails?.complete || !name.trim() || isCreatingPaymentMethod}
           style={styles.button}
         >
-          {isCreatingToken ? "Creating Token..." : "Create Payment Token"}
+          {isCreatingPaymentMethod
+            ? "Creating Payment Method..."
+            : "Create Payment Method"}
         </Button>
-      </View>
+      </ScrollView>
     );
   }
 );
@@ -208,18 +141,22 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingTop: 8,
+    flex: 1,
   },
   input: {
     marginBottom: 12,
   },
-  row: {
-    flexDirection: "row",
-    gap: 12,
+  cardFieldContainer: {
+    marginBottom: 12,
+    height: 50,
   },
-  half: {
-    flex: 1,
+  cardField: {
+    width: "100%",
+    height: 50,
+    marginVertical: 30,
   },
   button: {
     marginTop: 16,
+    marginBottom: 24,
   },
 });

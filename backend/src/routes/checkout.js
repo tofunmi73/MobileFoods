@@ -1,30 +1,34 @@
 import { Router } from "express";
 import { z } from "zod";
-import { createPaymentMethod } from "../services/stripe.js";
+import { confirmPaymentMethod } from "../services/stripe.js";
 
 const router = Router();
 
-router.post("/payment-method", async (req, res, next) => {
+// Receives payment_method_id from client (created via Stripe SDK)
+// No raw card data - secure approach
+router.post("/confirm-payment-method", async (req, res, next) => {
   try {
     const schema = z.object({
-      number: z.string().min(13).max(19),
-      exp_month: z.coerce.number().min(1).max(12),
-      exp_year: z.coerce.number().min(new Date().getFullYear()),
-      cvc: z.string().regex(/^\d{3,4}$/),
-      name: z.string().min(2),
+      paymentMethodId: z.string().min(1).startsWith("pm_"),
     });
 
-    const cardData = schema.parse(req.body);
-    const result = await createPaymentMethod(cardData);
+    const { paymentMethodId } = schema.parse(req.body);
+    
+    // Verify and retrieve payment method details from Stripe
+    const result = await confirmPaymentMethod(paymentMethodId);
 
     if (result.error) {
       return res.status(400).json(result);
     }
 
-    res.json(result);
+    res.json({ 
+      success: true, 
+      paymentMethodId: result.paymentMethodId,
+      ...result 
+    });
   } catch (e) {
     if (e.name === "ZodError") {
-      return res.status(400).json({ error: "Invalid card data", details: e.errors });
+      return res.status(400).json({ error: "Invalid payment method ID", details: e.errors });
     }
     next(e);
   }

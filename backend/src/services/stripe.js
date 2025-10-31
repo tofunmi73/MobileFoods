@@ -6,30 +6,28 @@ if (!process.env.STRIPE_SECRET_KEY) {
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
-export const createPaymentMethod = async (cardData) => {
-  const { number, exp_month, exp_year, cvc, name } = cardData;
-
+// Confirm/verify payment method created client-side (no raw card data)
+export const confirmPaymentMethod = async (paymentMethodId) => {
   if (!stripe) {
     return { error: "Stripe is not configured. Missing STRIPE_SECRET_KEY." };
   }
 
   try {
-    // PaymentMethod API (modern Stripe approach - replaces deprecated tokens)
-    const paymentMethod = await stripe.paymentMethods.create({
-      type: "card",
-      card: {
-        number: number.replace(/\s+/g, ""),
-        exp_month: parseInt(exp_month, 10),
-        exp_year: parseInt(exp_year, 10),
-        cvc: cvc,
-      },
-      billing_details: {
-        name: name,
-      },
-    });
+    // Retrieve payment method to verify it exists and get details
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
 
-    return { paymentMethodId: paymentMethod.id };
+    return {
+      paymentMethodId: paymentMethod.id,
+      type: paymentMethod.type,
+      card: {
+        brand: paymentMethod.card?.brand,
+        last4: paymentMethod.card?.last4,
+        expMonth: paymentMethod.card?.exp_month,
+        expYear: paymentMethod.card?.exp_year,
+      },
+      billingDetails: paymentMethod.billing_details,
+    };
   } catch (error) {
-    return { error: error.message || "Failed to create payment method" };
+    return { error: error.message || "Failed to confirm payment method" };
   }
 };
