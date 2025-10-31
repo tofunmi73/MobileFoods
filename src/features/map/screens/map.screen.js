@@ -16,14 +16,16 @@ export const MapScreen = ({ navigation }) => {
   const [latDelta, setLatDelta] = useState(0);
   const safeLatDelta = latDelta && latDelta > 0 ? latDelta : 0.1;
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-  if (!location) return <View style={styles.container} />;
-  const { lat, lng, viewport } = location;
-
+  // Keep hooks order stable: call hooks before any early return
   useEffect(() => {
-    const northeastLat = viewport.northeast.lat;
-    const southwestLat = viewport.southwest.lat;
-    setLatDelta(northeastLat - southwestLat);
-  }, [location, viewport]);
+    const northeastLat = location?.viewport?.northeast?.lat;
+    const southwestLat = location?.viewport?.southwest?.lat;
+    if (typeof northeastLat === "number" && typeof southwestLat === "number") {
+      setLatDelta(northeastLat - southwestLat);
+    }
+  }, [location]);
+  if (!location) return <View style={styles.container} />;
+  const { lat, lng } = location;
   return (
     <>
       <Search />

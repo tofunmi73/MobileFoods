@@ -7,6 +7,7 @@ import { RestaurantsProvider } from "../../services/restaurants/restaurants.cont
 import { RestaurantsNavigator } from "./restaurants.navigator";
 import { MapScreen } from "../../features/map/screens/map.screen";
 import { SettingsNavigator } from "./settings.navigator";
+import { CheckoutScreen } from "../../features/checkout/screen/checkout.screen";
 
 const Tab = createBottomTabNavigator();
 
@@ -22,6 +23,7 @@ export const AppNavigator = () => (
                 Restaurants: focused ? "restaurant" : "restaurant-outline",
                 Settings: focused ? "settings" : "settings-outline",
                 Map: focused ? "map" : "map-outline",
+                Checkout: focused ? "cart" : "cart-outline",
               };
               return (
                 <Ionicons name={icons[route.name]} size={size} color={color} />
@@ -32,6 +34,7 @@ export const AppNavigator = () => (
           })}
         >
           <Tab.Screen name="Restaurants" component={RestaurantsNavigator} />
+          <Tab.Screen name="Checkout" component={CheckoutScreen} />
           <Tab.Screen name="Map" component={MapScreen} />
           <Tab.Screen name="Settings" component={SettingsNavigator} />
         </Tab.Navigator>

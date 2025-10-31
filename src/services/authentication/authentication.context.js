@@ -108,12 +108,14 @@ export const AuthenticationProvider = ({ children }) => {
 
   // Monitor Firebase auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (usr) => {
+    const unsubscribe = onAuthStateChanged(auth, async (usr) => {
       setUser(usr ?? null);
       setError(null);
       setInitializing(false);
 
       if (usr) {
+        // Check inactivity timeout on app startup
+        await checkInactivity();
         updateLastActive();
         // Load profile picture when user logs in
         loadProfilePicture(usr.email);

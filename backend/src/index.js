@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import mapsRouter from "./routes/maps.js";
+import checkoutRouter from "./routes/checkout.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -21,6 +22,7 @@ app.use(limiter);
 
 app.get("/", (_, res) => res.json({ ok: true }));
 app.use("/api", mapsRouter);
+app.use("/api/checkout", checkoutRouter);
 
 app.use((err, req, res, next) => {
   const isZod = err?.issues && err?.name === "ZodError";
