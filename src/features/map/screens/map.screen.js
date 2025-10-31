@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import MapView, { Marker, Callout, PROVIDER_GOOGLE } from "react-native-maps";
-import { StyleSheet, TouchableOpacity, View as RNView } from "react-native";
+import { StyleSheet, TouchableOpacity, View as RNView, Text, ActivityIndicator } from "react-native";
 import { View } from "react-native";
 import Search from "../components/search.component";
 import { LocationContext } from "../../../services/location/location.context";
@@ -8,11 +8,12 @@ import { RestaurantsContext } from "../../../services/restaurants/restaurants.co
 import MapCallout from "../components/map-callout.component";
 import { Platform } from "react-native";
 import CompactRestaurantInfo from "../../../components/restraurant/compact-restaurant-info.component";
+import { theme } from "../../../infrastructure/theme";
 const isAndroid = Platform.OS === "android";
 
 export const MapScreen = ({ navigation }) => {
-  const { location } = useContext(LocationContext);
-  const { restaurants = [] } = useContext(RestaurantsContext);
+  const { location, isLoading: locationLoading } = useContext(LocationContext);
+  const { restaurants = [], isLoading: restaurantsLoading } = useContext(RestaurantsContext);
   const [latDelta, setLatDelta] = useState(0);
   const safeLatDelta = latDelta && latDelta > 0 ? latDelta : 0.1;
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
@@ -24,7 +25,21 @@ export const MapScreen = ({ navigation }) => {
       setLatDelta(northeastLat - southwestLat);
     }
   }, [location]);
-  if (!location) return <View style={styles.container} />;
+  
+  // Show loading state while location is loading
+  if (locationLoading || !location) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.brand.primary} />
+          <Text style={{ marginTop: 10, color: theme.colors.ui.secondary }}>
+            Loading map...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+  
   const { lat, lng } = location;
   return (
     <>
@@ -125,6 +140,12 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: theme.colors.bg.primary,
   },
   androidOverlayContainer: {
     position: "absolute",

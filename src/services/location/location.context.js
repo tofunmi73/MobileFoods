@@ -6,7 +6,7 @@ export const LocationContext = createContext();
 export const LocationProvider = ({ children }) => {
   const [keyword, setKeyword] = useState("Lagos");
   const [location, setLocation] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start as true for initial load
   const [error, setError] = useState(null);
 
   const retrieveLocation = (searchKeyword) => {
@@ -17,8 +17,10 @@ export const LocationProvider = ({ children }) => {
 
   useEffect(() => {
     if (!keyword.length) {
+      setIsLoading(false);
       return;
     }
+    setIsLoading(true); // Ensure loading is true when fetching
     locationRequest(keyword.toLowerCase())
       .then(locationTransform)
       .then((result) => {
@@ -29,6 +31,7 @@ export const LocationProvider = ({ children }) => {
       .catch((err) => {
         setIsLoading(false);
         setError(err);
+        console.error("Location request failed:", err);
       });
   }, [keyword]);
 
