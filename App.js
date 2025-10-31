@@ -2,8 +2,9 @@ import React from "react";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { StyleSheet, StatusBar } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { StripeProvider } from "@stripe/stripe-react-native";
-import Constants from "expo-constants";
+// STRIPE DISABLED - Requires native build, commenting out for Expo Go compatibility
+// import { StripeProvider } from "@stripe/stripe-react-native";
+// import Constants from "expo-constants";
 import {
   useFonts as useOswald,
   Oswald_400Regular,
@@ -13,9 +14,10 @@ import { theme } from "./src/infrastructure/theme";
 import { Navigation } from "./src/infrastructure/navigation";
 import { AuthenticationProvider } from "./src/services/authentication/authentication.context";
 
-const stripePublishableKey =
-  Constants.expoConfig?.extra?.stripePublishableKey ||
-  Constants.manifest?.extra?.stripePublishableKey;
+// STRIPE DISABLED
+// const stripePublishableKey =
+//   Constants.expoConfig?.extra?.stripePublishableKey ||
+//   Constants.manifest?.extra?.stripePublishableKey;
 
 export default function App() {
   const [oswaldLoaded] = useOswald({
@@ -30,21 +32,20 @@ export default function App() {
     return null;
   }
 
+  // STRIPE DISABLED - Removed StripeProvider wrapper for Expo Go compatibility
   return (
-    <StripeProvider publishableKey={stripePublishableKey}>
-      <SafeAreaProvider>
-        <ExpoStatusBar
-          style="auto"
-          backgroundColor={theme.colors.bg.primary}
-          translucent={false}
-        />
-        {/* <SafeAreaView style={styles.container} edges={["top"]}> */}
-          <AuthenticationProvider>
-            <Navigation />
-          </AuthenticationProvider>
-        {/* </SafeAreaView> */}
-      </SafeAreaProvider>
-    </StripeProvider>
+    <SafeAreaProvider>
+      <ExpoStatusBar
+        style="auto"
+        backgroundColor={theme.colors.bg.primary}
+        translucent={false}
+      />
+      {/* <SafeAreaView style={styles.container} edges={["top"]}> */}
+        <AuthenticationProvider>
+          <Navigation />
+        </AuthenticationProvider>
+      {/* </SafeAreaView> */}
+    </SafeAreaProvider>
   );
 }
 

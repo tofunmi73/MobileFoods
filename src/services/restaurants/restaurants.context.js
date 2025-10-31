@@ -12,19 +12,19 @@ export const RestaurantsProvider = ({ children }) => {
 
     const retrieveRestaurants = (loc) => {
         setIsLoading(true);
+        setError(null);
         setRestaurants([]);
-        setTimeout(() => {
-          restaurantsRequest(loc)
-            .then(restaurantsTransform)
-            .then((results) => {
-              setIsLoading(false);
-              setRestaurants(results);
-            })
-            .catch((err) => {
-              setIsLoading(false);
-              setError(err);
-            });
-        }, 2000);
+        restaurantsRequest(loc)
+          .then(restaurantsTransform)
+          .then((results) => {
+            setIsLoading(false);
+            setRestaurants(results);
+          })
+          .catch((err) => {
+            setIsLoading(false);
+            setError(err);
+            console.error("Failed to fetch restaurants:", err);
+          });
     };
     useEffect(() => {
       if (location) {

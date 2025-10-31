@@ -6,11 +6,18 @@ export const restaurantsRequest = async (location) => {
   const [lat, lng] = location.split(",");
   // Try backend first
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    
     const res = await fetch(
       `${BACKEND_URL}/api/places/nearby?lat=${encodeURIComponent(
         lat
-      )}&lng=${encodeURIComponent(lng)}&radius=1500`
+      )}&lng=${encodeURIComponent(lng)}&radius=1500`,
+      { signal: controller.signal }
     );
+    
+    clearTimeout(timeoutId);
+    
     if (res.ok) {
       const data = await res.json();
       // Map to legacy mock shape so transform can stay the same
@@ -27,8 +34,16 @@ export const restaurantsRequest = async (location) => {
         business_status: "OPERATIONAL",
       }));
       return { results };
+    } else {
+      console.warn(`Backend restaurants returned ${res.status}, falling back to mock`);
     }
-  } catch (_) {}
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      console.warn("Restaurants request timeout, falling back to mock");
+    } else {
+      console.warn("Restaurants request failed, falling back to mock:", err.message);
+    }
+  }
 
   // Fallback to mock
   return new Promise((resolve, reject) => {

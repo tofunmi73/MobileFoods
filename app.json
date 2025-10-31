@@ -15,7 +15,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mobilefoods.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "This app uses the camera to take profile photos."
+        "NSCameraUsageDescription": "This app uses the camera to take profile photos.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -36,19 +37,12 @@
         {
           "cameraPermission": "Allow MobileFoods to access your camera to take profile photos."
         }
-      ],
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.mobilefoods.app"
-        }
       ]
     ],
     "extra": {
       "eas": {
         "projectId": "d589e45d-d1f3-4a7c-aaee-0d84fa080552"
-      },
-      "stripePublishableKey": "pk_test_51SMxsg11fK3Q7rtpUq6nfhKl53ukfCc6C2k4BmbY2zFSGYXrGS4negM8SZq565JaSPyElU3jpeX409hlIplhxsyx00OnRIQpqo"
+      }
     }
   }
 }

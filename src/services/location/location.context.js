@@ -11,6 +11,7 @@ export const LocationProvider = ({ children }) => {
 
   const retrieveLocation = (searchKeyword) => {
     setIsLoading(true);
+    setError(null);
     setKeyword(searchKeyword);   
   };
 
