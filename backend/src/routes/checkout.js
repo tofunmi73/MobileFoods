@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
-import { createPaymentToken } from "../services/stripe.js";
+import { createPaymentMethod } from "../services/stripe.js";
 
 const router = Router();
 
-router.post("/payment-token", async (req, res, next) => {
+router.post("/payment-method", async (req, res, next) => {
   try {
     const schema = z.object({
       number: z.string().min(13).max(19),
@@ -15,7 +15,7 @@ router.post("/payment-token", async (req, res, next) => {
     });
 
     const cardData = schema.parse(req.body);
-    const result = await createPaymentToken(cardData);
+    const result = await createPaymentMethod(cardData);
 
     if (result.error) {
       return res.status(400).json(result);

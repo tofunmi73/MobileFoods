@@ -7,11 +7,14 @@ export const CheckoutScreen = () => {
   const creditCardRef = useRef();
 
   const handleTokenCreated = (result) => {
-    if (result.token) {
+    if (result.paymentMethodId) {
+      console.log("Payment Method ID:", result.paymentMethodId);
+      // Use paymentMethodId to process payment via PaymentIntent API
+    } else if (result.token) {
+      // Legacy token support (if needed)
       console.log("Payment token:", result.token);
-      // Send token to your backend for payment processing
     } else if (result.error) {
-      console.error("Token creation failed:", result.error);
+      console.error("Payment method creation failed:", result.error);
     }
   };
 

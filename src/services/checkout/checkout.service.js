@@ -1,10 +1,10 @@
 import { BACKEND_URL } from "../api/config";
 
-export const createPaymentToken = async (cardData) => {
+export const createPaymentMethod = async (cardData) => {
   const { number, exp_month, exp_year, cvc, name } = cardData;
 
   try {
-    const response = await fetch(`${BACKEND_URL}/api/checkout/payment-token`, {
+    const response = await fetch(`${BACKEND_URL}/api/checkout/payment-method`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -18,17 +18,29 @@ export const createPaymentToken = async (cardData) => {
       }),
     });
 
+    // Check if response is JSON before parsing
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("Non-JSON response from backend:", text.substring(0, 200));
+      return { error: `Server error: Expected JSON but got ${contentType}` };
+    }
+
     const data = await response.json();
 
     if (!response.ok || data.error) {
-      return { error: data.error || "Failed to create payment token" };
+      return { error: data.error || "Failed to create payment method" };
     }
 
-    return { token: data.token };
+    return { paymentMethodId: data.paymentMethodId };
   } catch (error) {
+    console.error("Payment method creation error:", error);
     return { error: error.message || "Network error" };
   }
 };
+
+// Keep createPaymentToken as alias for backward compatibility
+export const createPaymentToken = createPaymentMethod;
 
 export const validateCardData = (cardData) => {
   const { number, exp_month, exp_year, cvc, name } = cardData;
